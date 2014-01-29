@@ -74,6 +74,13 @@ public class Device implements IDevice {
      */
     protected volatile List<AttachmentPoint> attachmentPoints;
 
+    /**
+     *The previous attachment point for handover
+     * Note: oldAPs list could not be used because it automatically removes 
+     * the previous attachment point from the list.
+     */
+    protected volatile AttachmentPoint prevAP;
+
     // ************
     // Constructors
     // ************
@@ -459,8 +466,10 @@ public class Device implements IDevice {
             oldAPList.add(oldAP);
             this.oldAPs = oldAPList;
             if (!topology.isInSameBroadcastDomain(oldAP.getSw(), oldAP.getPort(),
-                                                  newAP.getSw(), newAP.getPort()))
+                                                  newAP.getSw(), newAP.getPort())){
+                this.prevAP = oldAP;
                 return true; // attachment point changed.
+            }
         } else  if (oldAPFlag) {
             // retain oldAP  as is.  Put the newAP in oldAPs for flagging
             // possible duplicates.
@@ -733,6 +742,14 @@ public class Device implements IDevice {
 
     public String getDHCPClientName() {
         return dhcpClientName;
+    }
+
+    public SwitchPort getPrevAP() {
+        if ( prevAP != null ){
+            return new SwitchPort(prevAP.getSw(), prevAP.getPort());
+        } else {
+            return null;
+        }
     }
 
     // ***************
