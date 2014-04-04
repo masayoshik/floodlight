@@ -72,10 +72,10 @@ public abstract class ForwardingBase
     protected static int OFMESSAGE_DAMPER_CAPACITY = 10000; // TODO: find sweet spot
     protected static int OFMESSAGE_DAMPER_TIMEOUT = 250; // ms
 
-    public static short FLOWMOD_DEFAULT_IDLE_TIMEOUT = 5; // in seconds
+    public static short FLOWMOD_DEFAULT_IDLE_TIMEOUT = 5; // in seconds (5 default)
     public static short FLOWMOD_DEFAULT_HARD_TIMEOUT = 0; // infinite
 
-    public static final short FLOWMOD_DEFAULT_IDLE_TIMEOUT_CONSTANT = 5;
+    public static final short FLOWMOD_DEFAULT_IDLE_TIMEOUT_CONSTANT = 5; //(5 default)
     public static final short FLOWMOD_DEFAULT_HARD_TIMEOUT_CONSTANT = 0;
 
     protected IFloodlightProviderService floodlightProvider;

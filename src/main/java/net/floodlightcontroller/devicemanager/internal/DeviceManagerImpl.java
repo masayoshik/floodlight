@@ -98,6 +98,11 @@ DeviceManagerImpl.DeviceUpdate.Change.*;
 
 import org.openflow.protocol.OFMatchWithSwDpid;
 import org.openflow.protocol.OFMessage;
+import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFMatch;
+import org.openflow.util.U16;
+import org.openflow.util.HexString;
+
 import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPort;
 import org.openflow.protocol.OFType;
@@ -1740,6 +1745,12 @@ IFlowReconcileListener, IInfoProvider {
                         device.updateAttachmentPoint(entity.getSwitchDPID(),
                                 entity.getSwitchPort().shortValue(),
                                 entity.getLastSeenTimestamp().getTime());
+
+		// To support terminal mobility, remove flow entries in the previous attachment point
+		if (moved) {
+		    Invalidate(device);
+		}
+
                 // TODO: use update mechanism instead of sending the
                 // notification directly
                 if (moved) {
@@ -1775,13 +1786,63 @@ IFlowReconcileListener, IInfoProvider {
         return device;
     }
 
+    /* Removing Flow entries related to deviec at entity */
+    protected void Invalidate(Device device)
+    {
+	long mac = device.getMACAddress();
+	SwitchPort sp = device.getPrevAP();
+
+	if (sp == null){
+	    logger.debug("Invaridate: Previous Attachement Point is null. MacAddress {}", HexString.toHexString(Ethernet.toByteArray(mac)));
+	    return;
+	}
+	IOFSwitch target_sw = floodlightProvider.getSwitch(sp.getSwitchDPID());
+	if (target_sw != null){
+	    String stringId = target_sw.getStringId();
+	    logger.debug("Invaridate: MacAddress {} at {}", HexString.toHexString(Ethernet.toByteArray(mac)), sp);
+	    
+	    OFMatch match = new OFMatch();
+	    int wildcards = 0;
+	    match.setDataLayerDestination(Ethernet.toByteArray(mac));
+	    wildcards = OFMatch.OFPFW_ALL;
+	    wildcards &= ~ OFMatch.OFPFW_DL_DST;
+	    match.setWildcards(wildcards);
+	    OFMessage fm = ((OFFlowMod) floodlightProvider.getOFMessageFactory()
+			    .getMessage(OFType.FLOW_MOD)).setMatch(match)
+		.setCommand(OFFlowMod.OFPFC_DELETE)
+		.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH));
+	    try {
+		List<OFMessage> msglist = new ArrayList<OFMessage>(1);
+		msglist.add(fm);
+		target_sw.write(msglist, null);
+	    } catch (Exception e) {
+		logger.error("Failed to clear flows on switch {} - {}", this, e);
+	    }
+
+	    match = new OFMatch();
+	    wildcards = 0;
+	    match.setDataLayerSource(Ethernet.toByteArray(mac));
+	    wildcards = OFMatch.OFPFW_ALL;
+	    wildcards &= ~ OFMatch.OFPFW_DL_SRC;
+	    match.setWildcards(wildcards);
+	    fm = ((OFFlowMod) floodlightProvider.getOFMessageFactory()
+		  .getMessage(OFType.FLOW_MOD)).setMatch(match)
+		.setCommand(OFFlowMod.OFPFC_DELETE)
+		.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH));
+	    try {
+		List<OFMessage> msglist = new ArrayList<OFMessage>(1);
+		msglist.add(fm);
+		target_sw.write(msglist, null);
+	    } catch (Exception e) {
+		logger.error("Failed to clear flows on switch {} - {}", this, e);
+	    }
+	}
+	return;
+    }
+
     protected boolean isEntityAllowed(Entity entity, IEntityClass entityClass) {
         return true;
     }
-
-
-
-
 
     protected EnumSet<DeviceField> findChangedFields(Device device,
                                                      Entity newEntity) {
