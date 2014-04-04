@@ -1,0 +1,26 @@
+<configuration scan="true">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/floodlight.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>logs/floodlight.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 100MB -->
+                <maxFileSize>50MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- keep 30 days' worth of history -->
+            <maxHistory>356</maxHistory>
+        </rollingPolicy>
+        <encoder>
+           <pattern>%date{ISO8601, America/Los_Angeles} %level [%logger:%thread] %msg%n</pattern>
+        </encoder>
+    </appender> 
+    <root level="INFO">
+        <appender-ref ref="FILE" />
+    </root>
+    <logger name="org" level="WARN"/>
+    <logger name="LogService" level="WARN"/> <!-- Restlet access logging -->
+    <logger name="net.floodlightcontroller" level="DEBUG"/>
+    <logger name="net.floodlightcontroller.logging" level="ERROR"/>
+</configuration>
